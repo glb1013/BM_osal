@@ -1,7 +1,7 @@
 #ifndef  OSAL_EVENT_H
 #define  OSAL_EVENT_H
 
-#include "type.h"
+#include "osal_type.h"
 #include "osal_timer.h"
 
 

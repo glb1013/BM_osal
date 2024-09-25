@@ -1,7 +1,7 @@
 #ifndef OSAL_TIMER_H
 #define OSAL_TIMER_H
 
-#include "type.h"
+#include "osal_type.h"
 #include "hal_timer.h"
 
 #define TIMER_DECR_TIME             1     //任务定时器更新时自减的数值单位

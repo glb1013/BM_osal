@@ -1,7 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "type.h"
+#include "osal_type.h"
 
 #define TICK_PERIOD_MS      10
 

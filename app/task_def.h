@@ -4,7 +4,7 @@
 
 #include "osal.h"
 #include "osal_timer.h"
-#include "osal_event.h"
+#include "osal_task.h"
 #include "osal_memory.h"
 #include "osal_msg.h"
 

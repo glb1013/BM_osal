@@ -7,7 +7,6 @@
  */
 #include <string.h>
 #include "osal.h"
-#include "osal_event.h"
 #include "osal_memory.h"
 
  /*********************************************************************

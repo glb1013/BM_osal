@@ -1,5 +1,5 @@
 #include "osal.h"
-#include "osal_event.h"
+#include "osal_task.h"
 #include "osal_memory.h"
 
 osal_task_t *gTaskHead;

@@ -2,7 +2,7 @@
 #define OSAL_MSG_H
 
 #include "osal.h"
-#include "type.h"
+#include "osal_type.h"
 
 #define OSAL_MSG_NEXT(msg_ptr)     ((osal_msg_hdr_t *) (msg_ptr) - 1)->next
 #define OSAL_MSG_ID(msg_ptr)     ((osal_msg_hdr_t *) (msg_ptr) - 1)->dest_id

@@ -1,5 +1,5 @@
 
-#include "type.h"
+#include "osal_type.h"
 #include "osal.h"
 #include "osal_memory.h"
 

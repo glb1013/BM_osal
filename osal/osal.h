@@ -1,7 +1,7 @@
 #ifndef OSAL_H
 #define OSAL_H
 
-#include "type.h"
+#include "osal_type.h"
 #include "hal.h"
 
 /* event∂®“Â£∫ 16bits

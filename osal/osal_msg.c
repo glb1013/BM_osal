@@ -1,6 +1,6 @@
 #include "osal_msg.h"
 #include "osal_memory.h"
-#include "osal_event.h"
+#include "osal_task.h"
 
 osal_msg_queue_t g_sys_msg_queue;
 

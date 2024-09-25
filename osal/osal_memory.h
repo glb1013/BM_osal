@@ -1,7 +1,7 @@
 #ifndef OSALMEM_METRICS_H
 #define OSALMEM_METRICS_H
 
-#include "type.h"
+#include "osal_type.h"
 
 #define MAXMEMHEAP              1024*6       //内存池大小，单位字节
 
