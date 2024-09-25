@@ -1,11 +1,12 @@
+#include "osal.h"
 #include "osal_event.h"
 #include "osal_memory.h"
 
-OsalTadkREC_t *TaskHead;
-OsalTadkREC_t *TaskActive;
+osal_task_t *gTaskHead;
+osal_task_t *gActiveTask;
 
-uint8 Task_id;              //任务ID统计
-uint8 tasksCnt;             //任务数量统计
+volatile uint8 gTaskId;              //任务ID统计
+volatile uint8 gTasksCnt;             //任务数量统计
 
 /*********************************************************************
  * @fn osal_set_event
@@ -18,13 +19,13 @@ uint8 tasksCnt;             //任务数量统计
  * @param   byte task_id - receiving tasks ID
  * @param   byte event_flag - what event to set
  *
- * @return  ZSUCCESS, INVALID_TASK
+ * @return  RET_SUCCESS, RET_TASK_INVALID
  */
-uint8 osal_set_event(byte task_id, uint16 event_flag)
+uint8 osal_set_event(uint8 task_id, uint16 event_flag)
 {
-    OsalTadkREC_t *srchTask;
+    osal_task_t *srchTask;
 
-    srchTask = osalFindTask(task_id);
+    srchTask = osal_task_find(task_id);
     if(srchTask)
     {
         // Hold off interrupts
@@ -35,9 +36,9 @@ uint8 osal_set_event(byte task_id, uint16 event_flag)
         HAL_EXIT_CRITICAL_SECTION();
     }
     else
-        return (INVALID_TASK);
+        return (RET_TASK_INVALID);
 
-    return (ZSUCCESS);
+    return (RET_SUCCESS);
 }
 
 /*********************************************************************
@@ -51,13 +52,13 @@ uint8 osal_set_event(byte task_id, uint16 event_flag)
  * @param   uint8 task_id - receiving tasks ID
  * @param   uint8 event_flag - what event to clear
  *
- * @return  SUCCESS, INVALID_TASK
+ * @return  SUCCESS, RET_TASK_INVALID
  */
 uint8 osal_clear_event(uint8 task_id, uint16 event_flag)
 {
-    OsalTadkREC_t *srchTask;
+    osal_task_t *srchTask;
 
-    srchTask = osalFindTask(task_id);
+    srchTask = osal_task_find(task_id);
     if(srchTask)
     {
         // Hold off interrupts
@@ -68,13 +69,13 @@ uint8 osal_clear_event(uint8 task_id, uint16 event_flag)
         HAL_EXIT_CRITICAL_SECTION();
     }
     else
-        return (INVALID_TASK);
+        return (RET_TASK_INVALID);
 
-    return (ZSUCCESS);
+    return (RET_SUCCESS);
 }
 
 /***************************************************************************
- * @fn osal_init_TaskHead
+ * @fn osal_task_reset
  *
  * @brief   init task link's head
  *
@@ -82,15 +83,15 @@ uint8 osal_clear_event(uint8 task_id, uint16 event_flag)
  *
  * @return
  */
-void  osal_init_TaskHead(void)
+void  osal_task_reset(void)
 {
-    TaskHead   = (OsalTadkREC_t *)NULL;
-    TaskActive = (OsalTadkREC_t *)NULL;
-    Task_id = 0;
+    gTaskHead   = (osal_task_t *)NULL;
+    gActiveTask = (osal_task_t *)NULL;
+    gTaskId = TASK_ID_USER_START;
 }
 
 /***************************************************************************
- * @fn osal_Task_init
+ * @fn osal_task_initAll
  *
  * @brief   init task
  *
@@ -98,50 +99,53 @@ void  osal_init_TaskHead(void)
  *
  * @return
  */
-void osal_Task_init(void)
+void osal_task_initAll(void)
 {
-    TaskActive = TaskHead;
-    while(TaskActive)
+    osal_task_t* p_task;
+    p_task = gTaskHead;
+    while(p_task)
     {
-        if(TaskActive->pfnInit)
+        if(p_task->pfnInit)
         {
-            TaskActive->pfnInit(TaskActive->taskID);
+            p_task->pfnInit(p_task->taskID);
         }
-        TaskActive = TaskActive->next;
+        p_task = p_task->next;
     }
-    TaskActive = (OsalTadkREC_t *)NULL;
+
+    //clear current task
+    gActiveTask = (osal_task_t *)NULL;
 }
 
 /***************************************************************************
- * @fn osal_add_Task
+ * @fn osal_task_add
  *
- * @brief   osal_add_Task
+ * @brief   osal_task_add
  *
  * @param   none
  *
  * @return
  */
-void  osal_add_Task(pTaskInitFn pfnInit,
-                    pTaskEventHandlerFn pfnEventProcessor,
+void  osal_task_add(TaskInitFuncPtr pfnInit,
+                    TaskEventHandlerPtr pfnEventProc,
                     uint8 taskPriority)
 {
-    OsalTadkREC_t  *TaskNew;
-    OsalTadkREC_t  *TaskSech;
-    OsalTadkREC_t  **TaskPTR;
-    TaskNew = osal_mem_alloc(sizeof(OsalTadkREC_t));
+    osal_task_t  *TaskNew;
+    osal_task_t  *TaskSech;
+    osal_task_t  **TaskPTR;
+    TaskNew = osal_mem_alloc(sizeof(osal_task_t));
     if(TaskNew)
     {
         TaskNew->pfnInit = pfnInit;
-        TaskNew->pfnEventProcessor = pfnEventProcessor;
-        TaskNew->taskID = Task_id++;
+        TaskNew->pfnEventProc = pfnEventProc;
+        TaskNew->taskID = gTaskId++;
         TaskNew->events = 0;
         TaskNew->taskPriority = taskPriority;
-        TaskNew->next = (OsalTadkREC_t *)NULL;
+        TaskNew->next = (osal_task_t *)NULL;
 
-        TaskPTR = &TaskHead;
-        TaskSech = TaskHead;
+        TaskPTR = &gTaskHead;
+        TaskSech = gTaskHead;
 
-        tasksCnt++;			//任务数量统计
+        gTasksCnt++;            //任务数量统计
 
         while(TaskSech)
         {
@@ -159,8 +163,13 @@ void  osal_add_Task(pTaskInitFn pfnInit,
     return;
 }
 
+osal_task_t* osal_task_getActive(void)
+{
+    return gActiveTask;
+}
+
 /*********************************************************************
- * @fn osalNextActiveTask
+ * @fn osal_task_nextActive
  *
  * @brief   This function will return the next active task.
  *
@@ -171,12 +180,12 @@ void  osal_add_Task(pTaskInitFn pfnInit,
  *
  * @return  pointer to the found task, NULL if not found
  */
-OsalTadkREC_t *osalNextActiveTask(void)
+osal_task_t *osal_task_nextActive(void)
 {
-    OsalTadkREC_t  *TaskSech;
+    osal_task_t  *TaskSech;
 
     // Start at the beginning
-    TaskSech = TaskHead;
+    TaskSech = gTaskHead;
 
     // When found or not
     while(TaskSech)
@@ -203,17 +212,17 @@ OsalTadkREC_t *osalNextActiveTask(void)
  *
  * @return  pointer to the found task, NULL if not found
  */
-OsalTadkREC_t *osalFindTask(uint8 taskID)
+osal_task_t *osal_task_find(uint8 taskID)
 {
-    OsalTadkREC_t *TaskSech;
-    TaskSech = TaskHead;
+    osal_task_t *TaskSech;
+    TaskSech = gTaskHead;
     while(TaskSech)
     {
         if(TaskSech->taskID == taskID)
         {
-            return (TaskSech);
+            break;
         }
         TaskSech = TaskSech->next;
     }
-    return ((OsalTadkREC_t *)NULL);
+    return TaskSech;
 }

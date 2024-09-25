@@ -1,13 +1,21 @@
 #ifndef TYPE_H
 #define TYPE_H
 
-#define ZSUCCESS                  1
-#define INVALID_TASK              2
-#define INVALID_MSG_POINTER       3
-#define INVALID_EVENT_ID          4
-#define NO_TIMER_AVAIL            5
-#define TASK_NO_TASK              6
-#define MSG_BUFFER_NOT_AVAIL      7
+enum {
+    RET_FAILURE = 0,
+    RET_ERROR = 0,
+    RET_SUCCESS = 1,
+    RET_TASK_INVALID,
+    RET_EVENT_INVALID_ID,
+    RET_TIMER_INVALID,
+    RET_MSG_INVALID_POINTER,
+    RET_MSG_BUFFER_NOT_AVAIL,
+};
+enum {
+    TASK_ID_INVALID = 0,
+    TASK_ID_USER_START = 1,
+    TASK_ID_USER_END = 255
+};
 
 typedef unsigned char       bool;
 
@@ -27,16 +35,16 @@ typedef signed char         int8;
 typedef signed short        int16;
 typedef signed int          int32;
 
-#ifndef FALSE
-#define FALSE       0
-#endif
-
 #ifndef ARRAY_NULL
 #define ARRAY_NULL '\0'
 #endif
 
 #ifndef TRUE
 #define TRUE       1
+#endif
+
+#ifndef FALSE
+#define FALSE       0
 #endif
 
 #ifndef OPEN
@@ -67,16 +75,8 @@ typedef signed int          int32;
 #define ERROR       0
 #endif
 
-//#define CLI()         __set_PRIMASK(1)              // Disable Interrupts
-//#define SEI()         __set_PRIMASK(0)              // Enable Interrupts
-#define CLI()         ;              // Disable Interrupts
-#define SEI()         ;              // Enable Interrupts
-
-#define HAL_ENABLE_INTERRUPTS()         SEI()       // Enable Interrupts
-#define HAL_DISABLE_INTERRUPTS()        CLI()       // Disable Interrupts
-#define HAL_INTERRUPTS_ARE_ENABLED()    SEI()       // Enable Interrupts
-
-#define HAL_ENTER_CRITICAL_SECTION()    CLI()
-#define HAL_EXIT_CRITICAL_SECTION()     SEI()
+#define BIT_MASK(n)         (1U << (n))
+#define BIT_SET(v,n)        ((v) | BIT_MASK(n))
+#define BIT_CLR(v,n)        ((v) & ~BIT_MASK(n))
 
 #endif

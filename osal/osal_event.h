@@ -4,31 +4,32 @@
 #include "type.h"
 #include "osal_timer.h"
 
-typedef void (*pTaskInitFn)(uint8 task_id);
-typedef uint16(*pTaskEventHandlerFn)(uint8 task_id, uint16 task_event);
 
 /**
  * @brief 任务链表
  */
-typedef struct OSALTaskREC
+typedef void (*TaskInitFuncPtr)(uint8 task_id);
+typedef uint16(*TaskEventHandlerPtr)(uint8 task_id, uint16 task_event);
+typedef struct _osal_task_def_
 {
-    struct  OSALTaskREC  *next;
-    pTaskInitFn          pfnInit;               //任务初始化函数指针
-    pTaskEventHandlerFn  pfnEventProcessor;     //任务事件处理函数指针
+    struct  _osal_task_def_  *next;
+    TaskInitFuncPtr      pfnInit;               //任务初始化函数指针
+    TaskEventHandlerPtr  pfnEventProc;     //任务事件处理函数指针
     uint8                taskID;                //任务ID
     uint8                taskPriority;          //任务优先级
     uint16               events;                //任务事件
-} OsalTadkREC_t;
+} osal_task_t;
 
-extern OsalTadkREC_t  *TaskActive;
+extern void osal_task_reset(void);
+extern void osal_task_add(TaskInitFuncPtr pfnInit, TaskEventHandlerPtr pfnEventProc, uint8 taskPriority);
+extern void osal_task_initAll(void);
+extern void osal_task_run(void);
 
-extern void osal_start_system(void);
-extern void osal_add_Task(pTaskInitFn pfnInit, pTaskEventHandlerFn pfnEventProcessor, uint8 taskPriority);
-extern void osal_Task_init(void);
-extern void osal_init_TaskHead(void);
-extern OsalTadkREC_t *osalNextActiveTask(void);
-extern OsalTadkREC_t *osalFindTask(uint8 taskID);
-extern uint8 osal_set_event(byte task_id, uint16 event_flag);
+extern osal_task_t* osal_task_getActive(void);
+extern osal_task_t *osal_task_nextActive(void);
+extern osal_task_t *osal_task_find(uint8 taskID);
+
+extern uint8 osal_set_event(uint8 task_id, uint16 event_flag);
 extern uint8 osal_clear_event(uint8 task_id, uint16 event_flag);
 
 #endif

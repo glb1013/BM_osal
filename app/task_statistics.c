@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "task_event.h"
+#include "task_def.h"
 
 uint8 statistics_task_id;                    //记录统计任务的任务ID
 
@@ -40,7 +40,7 @@ uint16 statistics_task_event_process(uint8 task_id, uint16 task_event)
         {
             switch(msg_pkt->hdr.event)      //判断该消息事件类型
             {
-                case PRINTF_STATISTICS:
+                case PRINTF_STATISTICS_MSG:
                 {
                     int count = *(int*)(((general_msg_data_t*)msg_pkt)->data);
                     printf("Statistics task receive print task printf count : %d\n", count);

@@ -1,5 +1,7 @@
-#include "osal_memory.h"
+
 #include "type.h"
+#include "osal.h"
+#include "osal_memory.h"
 
 #if ( MAXMEMHEAP >= 32768 )             //内存管理默认使用15位数据标识，最大能管理32768字节
 #error MAXMEMHEAP is too big to manage!

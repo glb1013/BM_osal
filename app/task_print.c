@@ -10,7 +10,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "task_event.h"
+#include "task_def.h"
 
 uint8 print_task_id;                    //记录打印任务的任务ID
 
@@ -22,8 +22,8 @@ void print_task_init(uint8 task_id)
 {
     print_task_id = task_id;
 
-    //开启一个循环定时器，每秒向打印任务发送PRINTF_STR事件
-    osal_start_reload_timer(print_task_id, PRINTF_STR, 1000 / TICK_PERIOD_MS);
+    //开启一个循环定时器，每秒向打印任务发送PRINT_TASK_EVENT_STR事件
+    osal_start_reload_timer(print_task_id, PRINT_TASK_EVENT_STR, 1000 / TICK_PERIOD_MS);
 }
 
 /**
@@ -55,7 +55,7 @@ uint16 print_task_event_process(uint8 task_id, uint16 task_event)
         return (task_event ^ SYS_EVENT_MSG);
     }
 
-    if(task_event & PRINTF_STR)
+    if(task_event & PRINT_TASK_EVENT_STR)
     {
         static int print_count = 0;
         printf("Print task printing, total memory : %d byte, used memory : %d byte !\n", MAXMEMHEAP, osal_heap_mem_used());
@@ -72,7 +72,7 @@ uint16 print_task_event_process(uint8 task_id, uint16 task_event)
                 //msg->data = (unsigned char*)( msg + sizeof(osal_event_hdr_t) );
                 msg->data = (unsigned char*)(msg + 1);
 
-                msg->hdr.event = PRINTF_STATISTICS;
+                msg->hdr.event = PRINTF_STATISTICS_MSG;
                 msg->hdr.status = 0;
                 *((int*)msg->data) = print_count;
 
@@ -80,7 +80,7 @@ uint16 print_task_event_process(uint8 task_id, uint16 task_event)
             }
         }
 
-        return task_event ^ PRINTF_STR; //处理完后需要清除事件位
+        return task_event ^ PRINT_TASK_EVENT_STR; //处理完后需要清除事件位
     }
 
     return 0;

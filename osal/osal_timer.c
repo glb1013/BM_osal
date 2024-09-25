@@ -1,35 +1,42 @@
+
+#include "osal.h"
 #include "osal_timer.h"
 #include "osal_memory.h"
 #include "osal_event.h"
-#include "type.h"
 
 typedef struct
 {
     void   *next;
-    uint16 timeout;             //定时时间，每过一个系统时钟会自减
-    uint16 event_flag;          //定时事件，定时时间减完产生任务事件
     uint8  task_id;             //响应的任务ID
+    uint8  resv;                //
+    uint16 event_flag;          //定时事件，定时时间减完产生任务事件
+    uint16 timeout;             //定时时间，每过一个系统时钟会自减
     uint16 reloadTimeout;       //重装定时时间
-} osalTimerRec_t;               //任务定时器，链表结构
+} osal_timer_t;                 //任务定时器，链表结构
+
+typedef struct
+{
+    uint8  decr_tick;           //任务定时器更新时自减的数值单位
+    uint8  isActive;            //标识硬件定时器是否运行
+    uint32 system_tick;         //记录系统时钟
+}osal_timer_ctrl_t;
 
 /*********************************************************************
  * GLOBAL VARIABLES
  */
-osalTimerRec_t  *timerHead;     //任务定时器链表头指针
-uint8   tmr_decr_time;          //任务定时器更新时自减的数值单位
-uint8   timerActive;            //标识硬件定时器是否运行
+osal_timer_t  *g_timersQueue;     //任务定时器链表头指针
 
 /*********************************************************************
  * LOCAL VARIABLES
  */
-static uint32 osal_systemClock;   //记录系统时钟
+static volatile osal_timer_ctrl_t g_timer_ctrl;
 
 /*********************************************************************
  * LOCAL FUNCTION PROTOTYPES
  */
-osalTimerRec_t *osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout);
-osalTimerRec_t *osalFindTimer(uint8 task_id, uint16 event_flag);
-void osalDeleteTimer(osalTimerRec_t *rmTimer);
+osal_timer_t *osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout);
+osal_timer_t *osalFindTimer(uint8 task_id, uint16 event_flag);
+void osalDeleteTimer(osal_timer_t *rmTimer);
 void osal_timer_activate(uint8 turn_on);
 void osal_timer_hw_setup(uint8 turn_on);
 
@@ -38,7 +45,7 @@ void osal_timer_hw_setup(uint8 turn_on);
  *********************************************************************/
 
 /*********************************************************************
- * @fn osalTimerInit
+ * @fn osal_timer_init
  *
  * @brief   Initialization for the OSAL Timer System.
  *
@@ -46,18 +53,18 @@ void osal_timer_hw_setup(uint8 turn_on);
  *
  * @return
  */
-void osalTimerInit(void)
+void osal_timer_init(void)
 {
     OSAL_TIMER_TICKINIT();    //初始化硬件定时器
 
     // Initialize the rollover modulo
-    tmr_decr_time = TIMER_DECR_TIME;
+    g_timer_ctrl.decr_tick = TIMER_DECR_TIME;
 
     // Initialize the system timer
     osal_timer_activate(FALSE);
-    timerActive = FALSE;
+    g_timer_ctrl.isActive = FALSE;
 
-    osal_systemClock = 0;
+    g_timer_ctrl.system_tick = 0;
 }
 
 /*********************************************************************
@@ -70,12 +77,12 @@ void osalTimerInit(void)
  * @param   event_flag
  * @param   timeout
  *
- * @return  osalTimerRec_t * - pointer to newly created timer
+ * @return  osal_timer_t * - pointer to newly created timer
  */
-osalTimerRec_t * osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout)
+osal_timer_t * osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout)
 {
-    osalTimerRec_t *newTimer;
-    osalTimerRec_t *srchTimer;
+    osal_timer_t *newTimer;
+    osal_timer_t *srchTimer;
 
     // Look for an existing timer first
     newTimer = osalFindTimer(task_id, event_flag);
@@ -89,7 +96,7 @@ osalTimerRec_t * osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout)
     else
     {
         // New Timer
-        newTimer = osal_mem_alloc(sizeof(osalTimerRec_t));
+        newTimer = osal_mem_alloc(sizeof(osal_timer_t));
 
         if(newTimer)
         {
@@ -101,15 +108,15 @@ osalTimerRec_t * osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout)
             newTimer->reloadTimeout = 0;
 
             // Does the timer list already exist
-            if(timerHead == NULL)
+            if(g_timersQueue == NULL)
             {
                 // Start task list
-                timerHead = newTimer;
+                g_timersQueue = newTimer;
             }
             else
             {
                 // Add it to the end of the timer list
-                srchTimer = timerHead;
+                srchTimer = g_timersQueue;
 
                 // Stop at the last record
                 while(srchTimer->next)
@@ -121,7 +128,7 @@ osalTimerRec_t * osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout)
             return (newTimer);
         }
         else
-            return ((osalTimerRec_t *)NULL);
+            return ((osal_timer_t *)NULL);
     }
 }
 
@@ -134,14 +141,14 @@ osalTimerRec_t * osalAddTimer(uint8 task_id, uint16 event_flag, uint16 timeout)
  * @param   task_id
  * @param   event_flag
  *
- * @return  osalTimerRec_t *
+ * @return  osal_timer_t *
  */
-osalTimerRec_t *osalFindTimer(uint8 task_id, uint16 event_flag)
+osal_timer_t *osalFindTimer(uint8 task_id, uint16 event_flag)
 {
-    osalTimerRec_t *srchTimer;
+    osal_timer_t *srchTimer;
 
     // Head of the timer list
-    srchTimer = timerHead;
+    srchTimer = g_timersQueue;
 
     // Stop when found or at the end
     while(srchTimer)
@@ -167,7 +174,7 @@ osalTimerRec_t *osalFindTimer(uint8 task_id, uint16 event_flag)
  *
  * @return  none
  */
-void osalDeleteTimer(osalTimerRec_t *rmTimer)
+void osalDeleteTimer(osal_timer_t *rmTimer)
 {
     // Does the timer list really exist
     if(rmTimer)
@@ -192,7 +199,7 @@ void osalDeleteTimer(osalTimerRec_t *rmTimer)
 void osal_timer_activate(uint8 turn_on)
 {
     osal_timer_hw_setup(turn_on);
-    timerActive = turn_on;
+    g_timer_ctrl.isActive = turn_on;
 }
 
 /*********************************************************************
@@ -230,11 +237,11 @@ void osal_timer_hw_setup(uint8 turn_on)
  * @param   uint16 event_id - event to be notified with
  * @param   UNINT16 timeout_value - in milliseconds.
  *
- * @return  SUCCESS, or NO_TIMER_AVAIL.
+ * @return  SUCCESS, or RET_NO_TIMER_AVAIL.
  */
 uint8 osal_start_timerEx(uint8 taskID, uint16 event_id, uint16 timeout_value)
 {
-    osalTimerRec_t *newTimer;
+    osal_timer_t *newTimer;
 
     HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
 
@@ -244,7 +251,7 @@ uint8 osal_start_timerEx(uint8 taskID, uint16 event_id, uint16 timeout_value)
     if(newTimer)
     {
         // Does the hal timer need to be started?
-        if(timerActive == FALSE)
+        if(g_timer_ctrl.isActive == FALSE)
         {
             osal_timer_activate(TRUE);
         }
@@ -252,7 +259,7 @@ uint8 osal_start_timerEx(uint8 taskID, uint16 event_id, uint16 timeout_value)
 
     HAL_EXIT_CRITICAL_SECTION(); // Re-enable interrupts.
 
-    return ((newTimer != NULL) ? SUCCESS : NO_TIMER_AVAIL);
+    return ((newTimer != NULL) ? RET_SUCCESS : RET_TIMER_INVALID);
 }
 
 /*********************************************************************
@@ -268,11 +275,11 @@ uint8 osal_start_timerEx(uint8 taskID, uint16 event_id, uint16 timeout_value)
  * @param   uint16 event_id - event to be notified with
  * @param   UNINT16 timeout_value - in milliseconds.
  *
- * @return  SUCCESS, or NO_TIMER_AVAIL.
+ * @return  SUCCESS, or RET_NO_TIMER_AVAIL.
  */
 uint8 osal_start_reload_timer(uint8 taskID, uint16 event_id, uint16 timeout_value)
 {
-    osalTimerRec_t *newTimer;
+    osal_timer_t *newTimer;
 
     HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
 
@@ -287,7 +294,7 @@ uint8 osal_start_reload_timer(uint8 taskID, uint16 event_id, uint16 timeout_valu
     if(newTimer)
     {
         // Does the hal timer need to be started?
-        if(timerActive == FALSE)
+        if(g_timer_ctrl.isActive == FALSE)
         {
             osal_timer_activate(TRUE);
         }
@@ -295,7 +302,7 @@ uint8 osal_start_reload_timer(uint8 taskID, uint16 event_id, uint16 timeout_valu
 
     HAL_EXIT_CRITICAL_SECTION(); // Re-enable interrupts.
 
-    return ((newTimer != NULL) ? SUCCESS : NO_TIMER_AVAIL);
+    return ((newTimer != NULL) ? RET_SUCCESS : RET_TIMER_INVALID);
 }
 
 /*********************************************************************
@@ -304,17 +311,17 @@ uint8 osal_start_reload_timer(uint8 taskID, uint16 event_id, uint16 timeout_valu
  * @brief
  *
  *   This function is called to stop a timer that has already been started.
- *   If ZSUCCESS, the function will cancel the timer and prevent the event
+ *   If RET_SUCCESS, the function will cancel the timer and prevent the event
  *   associated with the timer from being set for the calling task.
  *
  * @param   uint8 task_id - task id of timer to stop
  * @param   uint16 event_id - identifier of the timer that is to be stopped
  *
- * @return  SUCCESS or INVALID_EVENT_ID
+ * @return  SUCCESS or RET_INVALID_EVENT_ID
  */
 uint8 osal_stop_timerEx(uint8 task_id, uint16 event_id)
 {
-    osalTimerRec_t *foundTimer;
+    osal_timer_t *foundTimer;
 
     HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
 
@@ -327,7 +334,7 @@ uint8 osal_stop_timerEx(uint8 task_id, uint16 event_id)
 
     HAL_EXIT_CRITICAL_SECTION(); // Re-enable interrupts.
 
-    return ((foundTimer != NULL) ? SUCCESS : INVALID_EVENT_ID);
+    return ((foundTimer != NULL) ? RET_SUCCESS : RET_EVENT_INVALID_ID);
 }
 
 /*********************************************************************
@@ -343,7 +350,7 @@ uint8 osal_stop_timerEx(uint8 task_id, uint16 event_id)
 uint16 osal_get_timeoutEx(uint8 task_id, uint16 event_id)
 {
     uint16 rtrn = 0;
-    osalTimerRec_t *tmr;
+    osal_timer_t *tmr;
 
     HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
 
@@ -360,7 +367,7 @@ uint16 osal_get_timeoutEx(uint8 task_id, uint16 event_id)
 }
 
 /*********************************************************************
- * @fn osal_timer_num_active
+ * @fn osal_timer_activeNum
  *
  * @brief
  *
@@ -368,15 +375,15 @@ uint16 osal_get_timeoutEx(uint8 task_id, uint16 event_id)
  *
  * @return  uint8 - number of timers
  */
-uint8 osal_timer_num_active(void)
+uint8 osal_timer_activeNum(void)
 {
     uint8 num_timers = 0;
-    osalTimerRec_t *srchTimer;
+    osal_timer_t *srchTimer;
 
     HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
 
     // Head of the timer list
-    srchTimer = timerHead;
+    srchTimer = g_timersQueue;
 
     // Count timers in the list
     while(srchTimer != NULL)
@@ -401,25 +408,25 @@ uint8 osal_timer_num_active(void)
  *********************************************************************/
 void osalTimerUpdate(uint16 updateTime)
 {
-    osalTimerRec_t *srchTimer;
-    osalTimerRec_t *prevTimer;
+    osal_timer_t *srchTimer;
+    osal_timer_t *prevTimer;
 
     HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
     // Update the system time
-    osal_systemClock += updateTime;
+    g_timer_ctrl.system_tick += updateTime;
     HAL_EXIT_CRITICAL_SECTION(); // Re-enable interrupts.
 
     // Look for open timer slot
-    if(timerHead != NULL)
+    if(g_timersQueue != NULL)
     {
         // Add it to the end of the timer list
-        srchTimer = timerHead;
+        srchTimer = g_timersQueue;
         prevTimer = (void *)NULL;
 
         // Look for open timer slot
         while(srchTimer)
         {
-            osalTimerRec_t *freeTimer = NULL;
+            osal_timer_t *freeTimer = NULL;
 
             HAL_ENTER_CRITICAL_SECTION(); // Hold off interrupts.
 
@@ -447,7 +454,7 @@ void osalTimerUpdate(uint16 updateTime)
             {
                 // Take out of list
                 if(prevTimer == NULL)
-                    timerHead = srchTimer->next;
+                    g_timersQueue = srchTimer->next;
                 else
                     prevTimer->next = srchTimer->next;
 
@@ -479,7 +486,7 @@ void osalTimerUpdate(uint16 updateTime)
 }
 
 /*********************************************************************
- * @fn osal_GetSystemClock()
+ * @fn osal_getSystemClock()
  *
  * @brief   Read the local system clock.
  *
@@ -487,9 +494,9 @@ void osalTimerUpdate(uint16 updateTime)
  *
  * @return  local clock in milliseconds
  */
-uint32 osal_GetSystemClock(void)
+uint32 osal_getSystemClock(void)
 {
-    return (osal_systemClock);
+    return (g_timer_ctrl.system_tick);
 }
 
 /*********************************************************************
@@ -504,5 +511,5 @@ uint32 osal_GetSystemClock(void)
 //在每次系统定时溢出时调用一次，更新计时器
 void osal_update_timers(void)
 {
-    osalTimerUpdate(tmr_decr_time);
+    osalTimerUpdate(g_timer_ctrl.decr_tick);
 }
