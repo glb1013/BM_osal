@@ -6,23 +6,23 @@
 typedef struct
 {
     void   *next;
-    uint16 timeout;             //å®šæ—¶æ—¶é—´ï¼Œæ¯è¿‡ä¸€ä¸ªç³»ç»Ÿæ—¶é’Ÿä¼šè‡ªå‡
-    uint16 event_flag;          //å®šæ—¶äº‹ä»¶ï¼Œå®šæ—¶æ—¶é—´å‡å®Œäº§ç”Ÿä»»åŠ¡äº‹ä»¶
-    uint8  task_id;             //å“åº”çš„ä»»åŠ¡ID
-    uint16 reloadTimeout;       //é‡è£…å®šæ—¶æ—¶é—´
-} osalTimerRec_t;               //ä»»åŠ¡å®šæ—¶å™¨ï¼Œé“¾è¡¨ç»“æ„
+    uint16 timeout;             //¶¨Ê±Ê±¼ä£¬Ã¿¹ıÒ»¸öÏµÍ³Ê±ÖÓ»á×Ô¼õ
+    uint16 event_flag;          //¶¨Ê±ÊÂ¼ş£¬¶¨Ê±Ê±¼ä¼õÍê²úÉúÈÎÎñÊÂ¼ş
+    uint8  task_id;             //ÏìÓ¦µÄÈÎÎñID
+    uint16 reloadTimeout;       //ÖØ×°¶¨Ê±Ê±¼ä
+} osalTimerRec_t;               //ÈÎÎñ¶¨Ê±Æ÷£¬Á´±í½á¹¹
 
 /*********************************************************************
  * GLOBAL VARIABLES
  */
-osalTimerRec_t  *timerHead;     //ä»»åŠ¡å®šæ—¶å™¨é“¾è¡¨å¤´æŒ‡é’ˆ
-uint8   tmr_decr_time;          //ä»»åŠ¡å®šæ—¶å™¨æ›´æ–°æ—¶è‡ªå‡çš„æ•°å€¼å•ä½
-uint8   timerActive;            //æ ‡è¯†ç¡¬ä»¶å®šæ—¶å™¨æ˜¯å¦è¿è¡Œ
+osalTimerRec_t  *timerHead;     //ÈÎÎñ¶¨Ê±Æ÷Á´±íÍ·Ö¸Õë
+uint8   tmr_decr_time;          //ÈÎÎñ¶¨Ê±Æ÷¸üĞÂÊ±×Ô¼õµÄÊıÖµµ¥Î»
+uint8   timerActive;            //±êÊ¶Ó²¼ş¶¨Ê±Æ÷ÊÇ·ñÔËĞĞ
 
 /*********************************************************************
  * LOCAL VARIABLES
  */
-static uint32 osal_systemClock;   //è®°å½•ç³»ç»Ÿæ—¶é’Ÿ
+static uint32 osal_systemClock;   //¼ÇÂ¼ÏµÍ³Ê±ÖÓ
 
 /*********************************************************************
  * LOCAL FUNCTION PROTOTYPES
@@ -48,7 +48,7 @@ void osal_timer_hw_setup(uint8 turn_on);
  */
 void osalTimerInit(void)
 {
-    OSAL_TIMER_TICKINIT();    //åˆå§‹åŒ–ç¡¬ä»¶å®šæ—¶å™¨
+    OSAL_TIMER_TICKINIT();    //³õÊ¼»¯Ó²¼ş¶¨Ê±Æ÷
 
     // Initialize the rollover modulo
     tmr_decr_time = TIMER_DECR_TIME;
@@ -501,7 +501,7 @@ uint32 osal_GetSystemClock(void)
  *
  * @return  none
  */
-//åœ¨æ¯æ¬¡ç³»ç»Ÿå®šæ—¶æº¢å‡ºæ—¶è°ƒç”¨ä¸€æ¬¡ï¼Œæ›´æ–°è®¡æ—¶å™¨
+//ÔÚÃ¿´ÎÏµÍ³¶¨Ê±Òç³öÊ±µ÷ÓÃÒ»´Î£¬¸üĞÂ¼ÆÊ±Æ÷
 void osal_update_timers(void)
 {
     osalTimerUpdate(tmr_decr_time);

@@ -1,6 +1,6 @@
 /**
  * @file timer.c
- * @brief ç¡¬ä»¶å®šæ—¶å™¨å®ç°ï¼Œä¸ºosalæ“ä½œç³»ç»Ÿæä¾›ç³»ç»Ÿæ»´ç­”å¿ƒè·³æ—¶é’Ÿï¼Œç§»æ¤æ—¶éœ€è¦ä¿®æ”¹è¯¥æ–‡ä»¶
+ * @brief Ó²¼ş¶¨Ê±Æ÷ÊµÏÖ£¬Îªosal²Ù×÷ÏµÍ³Ìá¹©ÏµÍ³µÎ´ğĞÄÌøÊ±ÖÓ£¬ÒÆÖ²Ê±ĞèÒªĞŞ¸Ä¸ÃÎÄ¼ş
  * @version 0.1
  * @date 2019-07-25
  * @author WatWu
@@ -10,30 +10,93 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if defined(_MSC_VER)
+#include <conio.h>
+#include <windows.h>
+#include "timer.h"
+#include "osal_timer.h"
+
+#pragma  comment(lib, "Winmm.lib")
+
+typedef void (*TimerCallback)(void*);
+typedef struct {
+	uint16_t state;
+	MMRESULT handle;
+	uint32_t peroid;
+	TimerCallback callback;
+	void* para;
+} sys_timer_t;
+
+volatile sys_timer_t g_sys_timer;
+
+static void hal_timer_func(void* pro)
+{
+	osal_update_timers();
+}
+void CALLBACK TimerProc(UINT handle, UINT uMsg, DWORD_PTR user, DWORD_PTR arg1, DWORD_PTR arg2)
+{
+	if (g_sys_timer.handle != handle || g_sys_timer.state <= 0)
+	{
+		printf("[ERROR] timer proc: %u %08x %08x %08x\r\n",
+			uMsg, (uint32_t)user, (uint32_t)arg1, (uint32_t)arg2);
+		return;
+	}
+
+	if (g_sys_timer.callback != NULL)
+	{
+		g_sys_timer.callback(g_sys_timer.para);
+	}
+	else
+	{
+		/*printf("[DEBUG] timer proc: %u %u %08x %08x %08x\r\n",
+			id, uMsg, (uint32_t)user, (uint32_t)arg1, (uint32_t)arg2);*/
+	}
+}
+
+void OSAL_TIMER_TICKINIT(void)
+{
+	g_sys_timer.peroid = 10; //10ms
+	g_sys_timer.callback = hal_timer_func;
+	g_sys_timer.para = NULL;
+	g_sys_timer.handle = timeSetEvent(g_sys_timer.peroid, 1, TimerProc, g_sys_timer.para, TIME_PERIODIC);
+	g_sys_timer.state = 1;
+}
+
+void OSAL_TIMER_TICKSTART(void)
+{
+
+}
+
+void OSAL_TIMER_TICKSTOP(void)
+{
+
+}
+#else /* linux */
 #include <unistd.h>
 #include <pthread.h>
 
 #include "timer.h"
 #include "osal_timer.h"
 
-//æ­¤å¤„æ·»åŠ ç¡¬ä»¶å®šæ—¶å™¨ä¸­æ–­æº¢å‡ºå‡½æ•°ï¼Œä¸­æ–­å‘¨æœŸ1ï½10msï¼Œå¹¶åœ¨ä¸­æ–­å‡½æ•°ä¸­è°ƒç”¨ç³»ç»Ÿæ—¶é’Ÿæ›´æ–°å‡½æ•°osal_update_timers()
-//å³æ¯æ¬¡ç³»ç»Ÿæ»´ç­”å¿ƒè·³æ—¶è°ƒç”¨ä¸€æ¬¡osal_update_timers()
+//´Ë´¦Ìí¼ÓÓ²¼ş¶¨Ê±Æ÷ÖĞ¶ÏÒç³öº¯Êı£¬ÖĞ¶ÏÖÜÆÚ1¡«10ms£¬²¢ÔÚÖĞ¶Ïº¯ÊıÖĞµ÷ÓÃÏµÍ³Ê±ÖÓ¸üĞÂº¯Êıosal_update_timers()
+//¼´Ã¿´ÎÏµÍ³µÎ´ğĞÄÌøÊ±µ÷ÓÃÒ»´Îosal_update_timers()
 
-//å½“å‰ä¾‹ç¨‹åŸºäºlinuxè¿è¡Œï¼Œä½¿ç”¨çº¿ç¨‹ä¼‘çœ çš„æ–¹å¼æ¨¡æ‹Ÿç¡¬ä»¶å®šæ—¶å™¨æ¥å®ç°å¿ƒè·³
+//µ±Ç°Àı³Ì»ùÓÚlinuxÔËĞĞ£¬Ê¹ÓÃÏß³ÌĞİÃßµÄ·½Ê½Ä£ÄâÓ²¼ş¶¨Ê±Æ÷À´ÊµÏÖĞÄÌø
 
 static pthread_t hal_timer_pthread_fd;
 
 /**
- * @brief å®šæ—¶å™¨çº¿ç¨‹ï¼Œä¸ºosalæä¾›æ»´ç­”å¿ƒè·³ï¼Œåœ¨å•ç‰‡æœºå¹³å°åº”è¯¥ä½¿ç”¨ç¡¬ä»¶å®šæ—¶å™¨å®ç°
- * @param pro       [çº¿ç¨‹å‡½æ•°å‚æ•°åˆ—è¡¨]
- * @return void*    [æ— ]
+ * @brief ¶¨Ê±Æ÷Ïß³Ì£¬ÎªosalÌá¹©µÎ´ğĞÄÌø£¬ÔÚµ¥Æ¬»úÆ½Ì¨Ó¦¸ÃÊ¹ÓÃÓ²¼ş¶¨Ê±Æ÷ÊµÏÖ
+ * @param pro       [Ïß³Ìº¯Êı²ÎÊıÁĞ±í]
+ * @return void*    [ÎŞ]
  */
 static void* hal_timer_pthread(void *pro)
 {
     pro = pro;
     while(1)
     {
-        usleep(10 * 1000);      //10msçš„å¿ƒè·³
+        usleep(10 * 1000);      //10msµÄĞÄÌø
         osal_update_timers();
     }
 
@@ -41,11 +104,11 @@ static void* hal_timer_pthread(void *pro)
 }
 
 /**
- * @brief ç¡¬ä»¶å®šæ—¶å™¨åˆå§‹åŒ–ï¼Œè®¾å®šç³»ç»Ÿæ—¶é’Ÿ
+ * @brief Ó²¼ş¶¨Ê±Æ÷³õÊ¼»¯£¬Éè¶¨ÏµÍ³Ê±ÖÓ
  */
 void OSAL_TIMER_TICKINIT(void)
 {
-    //åˆ›å»ºå®šæ—¶å™¨çº¿ç¨‹ï¼Œä½¿ç”¨çº¿ç¨‹æ¥æ¨¡æ‹Ÿå®šæ—¶å™¨
+    //´´½¨¶¨Ê±Æ÷Ïß³Ì£¬Ê¹ÓÃÏß³ÌÀ´Ä£Äâ¶¨Ê±Æ÷
     int ret = pthread_create(&hal_timer_pthread_fd, NULL, hal_timer_pthread, NULL);
     if(ret != 0)
     {
@@ -56,7 +119,7 @@ void OSAL_TIMER_TICKINIT(void)
 }
 
 /**
- * @brief å¼€å¯ç¡¬ä»¶å®šæ—¶å™¨ï¼ŒOSALä¼šæ ¹æ®ç¨‹åºä¸­è½¯ä»¶å®šæ—¶å™¨çš„å®é™…ä½¿ç”¨åŠ¨æ€å¼€å¯å’Œå…³é—­ï¼Œä¸ºç©ºåˆ™ä¸€ç›´å¼€å¯
+ * @brief ¿ªÆôÓ²¼ş¶¨Ê±Æ÷£¬OSAL»á¸ù¾İ³ÌĞòÖĞÈí¼ş¶¨Ê±Æ÷µÄÊµ¼ÊÊ¹ÓÃ¶¯Ì¬¿ªÆôºÍ¹Ø±Õ£¬Îª¿ÕÔòÒ»Ö±¿ªÆô
  */
 void OSAL_TIMER_TICKSTART(void)
 {
@@ -64,9 +127,10 @@ void OSAL_TIMER_TICKSTART(void)
 }
 
 /**
- * @brief å…³é—­ç¡¬ä»¶å®šæ—¶å™¨ï¼Œä¸ºç©ºåˆ™ä¸€ç›´ä¸å…³é—­
+ * @brief ¹Ø±ÕÓ²¼ş¶¨Ê±Æ÷£¬Îª¿ÕÔòÒ»Ö±²»¹Ø±Õ
  */
 void OSAL_TIMER_TICKSTOP(void)
 {
 
 }
+#endif

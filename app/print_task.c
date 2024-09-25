@@ -1,6 +1,6 @@
 /**
  * @file print_task.c
- * @brief æ‰“å°ä»»åŠ¡
+ * @brief ´òÓ¡ÈÎÎñ
  * @version 0.1
  * @date 2019-07-25
  * @author WatWu
@@ -12,43 +12,43 @@
 
 #include "task_event.h"
 
-uint8 print_task_id;                    //è®°å½•æ‰“å°ä»»åŠ¡çš„ä»»åŠ¡ID
+uint8 print_task_id;                    //¼ÇÂ¼´òÓ¡ÈÎÎñµÄÈÎÎñID
 
 /**
- * @brief ä»»åŠ¡åˆå§‹åŒ–
- * @param task_id [åˆå§‹åŒ–æ—¶åˆ†é…ç»™å½“å‰ä»»åŠ¡çš„ä»»åŠ¡IDï¼Œæ ‡è®°åŒºåˆ†æ¯ä¸€ä¸ªä»»åŠ¡]
+ * @brief ÈÎÎñ³õÊ¼»¯
+ * @param task_id [³õÊ¼»¯Ê±·ÖÅä¸øµ±Ç°ÈÎÎñµÄÈÎÎñID£¬±ê¼ÇÇø·ÖÃ¿Ò»¸öÈÎÎñ]
  */
 void print_task_init(uint8 task_id)
 {
     print_task_id = task_id;
 
-    //å¼€å¯ä¸€ä¸ªå¾ªç¯å®šæ—¶å™¨ï¼Œæ¯ç§’å‘æ‰“å°ä»»åŠ¡å‘é€PRINTF_STRäº‹ä»¶
+    //¿ªÆôÒ»¸öÑ­»·¶¨Ê±Æ÷£¬Ã¿ÃëÏò´òÓ¡ÈÎÎñ·¢ËÍPRINTF_STRÊÂ¼ş
     osal_start_reload_timer(print_task_id, PRINTF_STR, 1000 / TICK_PERIOD_MS);
 }
 
 /**
- * @brief å½“å‰ä»»åŠ¡çš„äº‹ä»¶å›è°ƒå¤„ç†å‡½æ•°
- * @param task_id       [ä»»åŠ¡ID]
- * @param task_event    [æ”¶åˆ°çš„æœ¬ä»»åŠ¡äº‹ä»¶]
- * @return uint16       [æœªå¤„ç†çš„äº‹ä»¶]
+ * @brief µ±Ç°ÈÎÎñµÄÊÂ¼ş»Øµ÷´¦Àíº¯Êı
+ * @param task_id       [ÈÎÎñID]
+ * @param task_event    [ÊÕµ½µÄ±¾ÈÎÎñÊÂ¼ş]
+ * @return uint16       [Î´´¦ÀíµÄÊÂ¼ş]
  */
 uint16 print_task_event_process(uint8 task_id, uint16 task_event)
 {
-    if(task_event & SYS_EVENT_MSG)       //åˆ¤æ–­æ˜¯å¦ä¸ºç³»ç»Ÿæ¶ˆæ¯äº‹ä»¶
+    if(task_event & SYS_EVENT_MSG)       //ÅĞ¶ÏÊÇ·ñÎªÏµÍ³ÏûÏ¢ÊÂ¼ş
     {
         osal_sys_msg_t *msg_pkt;
-        msg_pkt = (osal_sys_msg_t *)osal_msg_receive(task_id);      //ä»æ¶ˆæ¯é˜Ÿåˆ—è·å–ä¸€æ¡æ¶ˆæ¯
+        msg_pkt = (osal_sys_msg_t *)osal_msg_receive(task_id);      //´ÓÏûÏ¢¶ÓÁĞ»ñÈ¡Ò»ÌõÏûÏ¢
 
         while(msg_pkt)
         {
-            switch(msg_pkt->hdr.event)      //åˆ¤æ–­è¯¥æ¶ˆæ¯äº‹ä»¶ç±»å‹
+            switch(msg_pkt->hdr.event)      //ÅĞ¶Ï¸ÃÏûÏ¢ÊÂ¼şÀàĞÍ
             {
                 default:
                     break;
             }
 
-            osal_msg_deallocate((uint8 *)msg_pkt);                  //é‡Šæ”¾æ¶ˆæ¯å†…å­˜
-            msg_pkt = (osal_sys_msg_t *)osal_msg_receive(task_id);  //è¯»å–ä¸‹ä¸€æ¡æ¶ˆæ¯
+            osal_msg_deallocate((uint8 *)msg_pkt);                  //ÊÍ·ÅÏûÏ¢ÄÚ´æ
+            msg_pkt = (osal_sys_msg_t *)osal_msg_receive(task_id);  //¶ÁÈ¡ÏÂÒ»ÌõÏûÏ¢
         }
 
         // return unprocessed events
@@ -63,12 +63,12 @@ uint16 print_task_event_process(uint8 task_id, uint16 task_event)
         print_count++;
         if(print_count % 5 == 0 && print_count != 0)
         {
-            //å‘ç»Ÿè®¡ä»»åŠ¡å‘é€æ¶ˆæ¯
+            //ÏòÍ³¼ÆÈÎÎñ·¢ËÍÏûÏ¢
             general_msg_data_t *msg;
             msg = (general_msg_data_t*)osal_msg_allocate(sizeof(general_msg_data_t) + sizeof(int));
             if(msg != NULL)
             {
-                //æ¶ˆæ¯ç»“æ„ä½“çš„dataæ•°æ®æŒ‡é’ˆåç§»è‡³ç”³è¯·åˆ°çš„å†…å­˜çš„æ•°æ®æ®µ
+                //ÏûÏ¢½á¹¹ÌåµÄdataÊı¾İÖ¸ÕëÆ«ÒÆÖÁÉêÇëµ½µÄÄÚ´æµÄÊı¾İ¶Î
                 //msg->data = (unsigned char*)( msg + sizeof(osal_event_hdr_t) );
                 msg->data = (unsigned char*)(msg + 1);
 
@@ -80,7 +80,7 @@ uint16 print_task_event_process(uint8 task_id, uint16 task_event)
             }
         }
 
-        return task_event ^ PRINTF_STR; //å¤„ç†å®Œåéœ€è¦æ¸…é™¤äº‹ä»¶ä½
+        return task_event ^ PRINTF_STR; //´¦ÀíÍêºóĞèÒªÇå³ıÊÂ¼şÎ»
     }
 
     return 0;

@@ -9,9 +9,9 @@
 #define TASK_NO_TASK              6
 #define MSG_BUFFER_NOT_AVAIL      7
 
-typedef unsigned char       BOOL;
+typedef unsigned char       bool;
 
-//芯片硬件字长
+//оƬӲ���ֳ�
 typedef unsigned int        halDataAlign_t;
 
 // Unsigned numbers

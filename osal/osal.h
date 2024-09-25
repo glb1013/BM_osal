@@ -20,12 +20,12 @@ typedef struct
 {
     osal_event_hdr_t hdr;
     uint8* Data_t;
-} osal_sys_msg_t;                       //é»˜è®¤ç³»ç»Ÿæ¶ˆæ¯ç»“æ„ä½“
+} osal_sys_msg_t;                       //Ä¬ÈÏÏµÍ³ÏûÏ¢½á¹¹Ìå
 
 typedef void *osal_msg_q_t;
 
 extern osal_msg_q_t osal_qHead;
-extern uint8 tasksCnt;                  //ä»»åŠ¡æ•°é‡ç»Ÿè®¡
+extern uint8 tasksCnt;                  //ÈÎÎñÊıÁ¿Í³¼Æ
 
 extern uint8 osal_init_system(void);
 int osal_strlen(char *pString);

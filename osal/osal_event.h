@@ -8,16 +8,16 @@ typedef void (*pTaskInitFn)(uint8 task_id);
 typedef uint16(*pTaskEventHandlerFn)(uint8 task_id, uint16 task_event);
 
 /**
- * @brief ä»»åŠ¡é“¾è¡¨
+ * @brief ÈÎÎñÁ´±í
  */
 typedef struct OSALTaskREC
 {
     struct  OSALTaskREC  *next;
-    pTaskInitFn          pfnInit;               //ä»»åŠ¡åˆå§‹åŒ–å‡½æ•°æŒ‡é’ˆ
-    pTaskEventHandlerFn  pfnEventProcessor;     //ä»»åŠ¡äº‹ä»¶å¤„ç†å‡½æ•°æŒ‡é’ˆ
-    uint8                taskID;                //ä»»åŠ¡ID
-    uint8                taskPriority;          //ä»»åŠ¡ä¼˜å…ˆçº§
-    uint16               events;                //ä»»åŠ¡äº‹ä»¶
+    pTaskInitFn          pfnInit;               //ÈÎÎñ³õÊ¼»¯º¯ÊıÖ¸Õë
+    pTaskEventHandlerFn  pfnEventProcessor;     //ÈÎÎñÊÂ¼ş´¦Àíº¯ÊıÖ¸Õë
+    uint8                taskID;                //ÈÎÎñID
+    uint8                taskPriority;          //ÈÎÎñÓÅÏÈ¼¶
+    uint16               events;                //ÈÎÎñÊÂ¼ş
 } OsalTadkREC_t;
 
 extern OsalTadkREC_t  *TaskActive;

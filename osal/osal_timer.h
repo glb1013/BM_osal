@@ -4,7 +4,7 @@
 #include "type.h"
 #include "timer.h"
 
-#define TIMER_DECR_TIME       	1 	//ä»»åŠ¡å®šæ—¶å™¨æ›´æ–°æ—¶è‡ªå‡çš„æ•°å€¼å•ä½
+#define TIMER_DECR_TIME       	1 	//ÈÎÎñ¶¨Ê±Æ÷¸üĞÂÊ±×Ô¼õµÄÊıÖµµ¥Î»
 
 extern void osalTimerInit(void);
 extern uint8 osal_start_timerEx(uint8 task_id, uint16 event_id, uint16 timeout_value);

@@ -4,8 +4,8 @@
 OsalTadkREC_t *TaskHead;
 OsalTadkREC_t *TaskActive;
 
-uint8 Task_id;              //浠诲姟ID缁熻
-uint8 tasksCnt;             //浠诲姟鏁伴噺缁熻
+uint8 Task_id;              //任务ID统计
+uint8 tasksCnt;             //任务数量统计
 
 /*********************************************************************
  * @fn osal_set_event
@@ -141,7 +141,7 @@ void  osal_add_Task(pTaskInitFn pfnInit,
         TaskPTR = &TaskHead;
         TaskSech = TaskHead;
 
-        tasksCnt++;			//浠诲姟鏁伴噺缁熻
+        tasksCnt++;			//任务数量统计
 
         while(TaskSech)
         {
