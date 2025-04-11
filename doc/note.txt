@@ -1,0 +1,17 @@
+1. task
+(1) task priority
+(2) task state and sched
+(3) 
+
+2. ipc
+(1) now, only flags;
+(2) msgbox(mailbox): priority?
+(3) 
+
+3. mem
+
+
+4. log
+
+5. 
+
